@@ -1,0 +1,8 @@
+{
+  "threshold": 0.5855,
+  "model_name": "speechbrain/spkrec-ecapa-voxceleb",
+  "embedding_dim": 192,
+  "num_reference_vectors": 388,
+  "description": "Owner voice profile for Jarvis agent",
+  "last_updated": "2026-10-07T20:30:23.695445"
+}
