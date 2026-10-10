@@ -37,7 +37,6 @@ class AdaptiveIdentityService:
         self.config_path = Path(config_path)
         
         # ... загрузка модели ...
-        logger.info(f"Loading ECAPA-TDNN on {DEVICE}...")
         try:
             self.model = EncoderClassifier.from_hparams(
                 source=model_source, 
@@ -50,14 +49,12 @@ class AdaptiveIdentityService:
         
         # *** ДОБАВЛЕНО: Инициализация препроцессора ***
         self.preprocessor = AudioPreprocessor(device=DEVICE)
-        logger.info("Audio Preprocessor initialized (FFmpeg backend active).")
         
         # ... остальная инициализация профиля ...
         if not self.profile_path.exists():
             raise FileNotFoundError(f"Profile file not found: {self.profile_path}")
         
         self.profile_vectors = np.load(self.profile_path)
-        logger.info(f"Loaded profile with {len(self.profile_vectors)} vectors.")
         
         self.high_confidence_threshold = high_confidence_threshold
         self.verify_threshold = verify_threshold
@@ -91,12 +88,13 @@ class AdaptiveIdentityService:
         if len(self.profile_vectors) == 0:
             return 0.0
             
+        eps=1e-2
         # Dot product между нормализованными векторами = Cosine Similarity
         sims = np.dot(self.profile_vectors, test_emb)
         res = float(np.max(sims))
         if (res == 1.0):
             print(' ---  Запись уже имеется в базе, не добавляем')
-        return res, (res == 1.0)
+        return res, (1.0 - res <= eps)
 
     def _update_profile(self, new_vector: np.ndarray):
         """Добавляет вектор в профиль и сохраняет на диск."""
@@ -173,60 +171,59 @@ class AdaptiveIdentityService:
                 
         else:
             self.stats["rejected"] += 1
-            logger.warning(f"{log_prefix}ACCESS DENIED. Score: {score:.4f} < Threshold: {self.verify_threshold}")
             
         return is_owner, score
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Verify voice identity against owner profile.")
+# def main():
+#     parser = argparse.ArgumentParser(description="Verify voice identity against owner profile.")
     
-    parser.add_argument(
-        "--file", 
-        type=str, 
-        required=True,
-        help="Path to the audio file to verify."
-    )
+#     parser.add_argument(
+#         "--file", 
+#         type=str, 
+#         required=True,
+#         help="Path to the audio file to verify."
+#     )
     
-    parser.add_argument(
-        "--no-adapt",
-        action="store_true",
-        help="Disable automatic profile updates (verification only)."
-    )
+#     parser.add_argument(
+#         "--no-adapt",
+#         action="store_true",
+#         help="Disable automatic profile updates (verification only)."
+#     )
     
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Simulate verification without saving changes to disk."
-    )
+#     parser.add_argument(
+#         "--dry-run",
+#         action="store_true",
+#         help="Simulate verification without saving changes to disk."
+#     )
     
-    args = parser.parse_args()
+#     args = parser.parse_args()
 
-    # Инициализация сервиса
-    service = AdaptiveIdentityService()
+#     # Инициализация сервиса
+#     service = AdaptiveIdentityService()
     
-    test_file = Path(args.file)
-    if not test_file.exists():
-        print(f"File not found: {test_file}")
-        exit(1)
+#     test_file = Path(args.file)
+#     if not test_file.exists():
+#         print(f"File not found: {test_file}")
+#         exit(1)
 
-    print("\n=== STARTING VERIFICATION ===")
+#     print("\n=== STARTING VERIFICATION ===")
     
-    # Вызов метода с учетом флагов
-    is_owner, score = service.verify_and_adapt(
-        audio_path=str(test_file),
-        enable_adaptation=not args.no_adapt,
-        dry_run=args.dry_run
-    )
+#     # Вызов метода с учетом флагов
+#     is_owner, score = service.verify_and_adapt(
+#         audio_path=str(test_file),
+#         enable_adaptation=not args.no_adapt,
+#         dry_run=args.dry_run
+#     )
     
-    status = "✅ ACCESS GRANTED" if is_owner else "❌ ACCESS DENIED"
-    mode = "DRY RUN" if args.dry_run else ("ADAPTIVE" if not args.no_adapt else "STRICT")
+#     status = "✅ ACCESS GRANTED" if is_owner else "❌ ACCESS DENIED"
+#     mode = "DRY RUN" if args.dry_run else ("ADAPTIVE" if not args.no_adapt else "STRICT")
     
-    print(f"\nResult: {status}")
-    print(f"Mode:   {mode}")
-    print(f"Score:  {score:.4f}")
-    print(f"Stats:  Accepted={service.stats['accepted']}, Rejected={service.stats['rejected']}, Updated={service.stats['updated_profile']}")
+#     print(f"\nResult: {status}")
+#     print(f"Mode:   {mode}")
+#     print(f"Score:  {score:.4f}")
+#     print(f"Stats:  Accepted={service.stats['accepted']}, Rejected={service.stats['rejected']}, Updated={service.stats['updated_profile']}")
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
