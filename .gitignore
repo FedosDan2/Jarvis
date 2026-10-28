@@ -1,2 +1,7 @@
 /test_sound
 /data
+/out
+/models
+/pretrained_models
+__pycache__/
+*.py[cod]
